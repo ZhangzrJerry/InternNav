@@ -31,6 +31,7 @@ class InternVLAN1AsyncAgent:
         print(f"args.model_path{args.model_path}")
         self.model = InternVLAN1ForCausalLM.from_pretrained(
             args.model_path,
+            ignore_mismatched_sizes=True,
             torch_dtype=torch.bfloat16,
             attn_implementation="eager",
             device_map={"": self.device},

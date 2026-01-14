@@ -48,7 +48,6 @@ class InternVLAN1ForCausalLM(Qwen2_5_VLForConditionalGeneration, InternVLAN1Meta
         config.model_type == "internvla_n1"
 
         self.model = InternVLAN1Model(config)
-        self.visual = self.model.visual
         self.rope_deltas = None
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         # Initialize weights and apply final processing

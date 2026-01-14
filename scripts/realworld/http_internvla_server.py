@@ -90,17 +90,19 @@ if __name__ == '__main__':
     parser.add_argument("--num_history", type=int, default=8)
     args = parser.parse_args()
 
+    print("=" * 20)
     args.camera_intrinsic = np.array(
         [[386.5, 0.0, 328.9, 0.0], [0.0, 386.5, 244, 0.0], [0.0, 0.0, 1.0, 0.0], [0.0, 0.0, 0.0, 1.0]]
     )
     agent = InternVLAN1AsyncAgent(args)
     agent.step(
-        np.zeros((480, 640, 3), dtype=np.uint8),
-        np.zeros((480, 640), dtype=np.uint16),
+        np.zeros((240, 320, 3), dtype=np.uint8),
+        np.zeros((240, 320), dtype=np.uint16),
         np.eye(4),
         "hello",
         intrinsic=args.camera_intrinsic,
     )
+    print("=" * 20)
     agent.reset()
 
     app.run(host='0.0.0.0', port=5801)
