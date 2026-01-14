@@ -27,6 +27,10 @@ class InternVLAN1ModelConfig(Qwen2_5_VLConfig):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.model_cfg = kwargs.get('model_cfg', None)
+        if not hasattr(self, "hidden_size") and hasattr(self, "text_config"):
+            self.hidden_size = self.text_config.hidden_size
+        if not hasattr(self, "vocab_size") and hasattr(self, "text_config"):
+            self.vocab_size = self.text_config.vocab_size
 
 
 class InternVLAN1Model(InternVLAN1MetaModel, Qwen2_5_VLModel):
@@ -44,6 +48,7 @@ class InternVLAN1ForCausalLM(Qwen2_5_VLForConditionalGeneration, InternVLAN1Meta
         config.model_type == "internvla_n1"
 
         self.model = InternVLAN1Model(config)
+        self.visual = self.model.visual
         self.rope_deltas = None
         self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
         # Initialize weights and apply final processing
@@ -126,7 +131,7 @@ class InternVLAN1ForCausalLM(Qwen2_5_VLForConditionalGeneration, InternVLAN1Meta
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
 
         if inputs_embeds is None:
-            inputs_embeds = self.model.embed_tokens(input_ids)
+            inputs_embeds = self.get_input_embeddings()(input_ids)
             if pixel_values is not None:
                 pixel_values = pixel_values.type(self.visual.dtype)
                 image_embeds = self.visual(pixel_values, grid_thw=image_grid_thw)
@@ -320,7 +325,7 @@ class InternVLAN1ForCausalLM(Qwen2_5_VLForConditionalGeneration, InternVLAN1Meta
     def generate_latents(self, input_ids, pixel_values, image_grid_thw):
         input_ids.to(self.get_model().device)
         with torch.no_grad():
-            text_embeds = self.get_model().embed_tokens(input_ids)
+            text_embeds = self.get_input_embeddings()(input_ids)
         latent_queries = self.get_model().latent_queries.repeat(text_embeds.shape[0], 1, 1)
         image_idx = input_ids == IMAGE_TOKEN_INDEX
         N_QUERY = self.get_n_query()

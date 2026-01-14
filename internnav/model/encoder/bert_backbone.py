@@ -3,7 +3,37 @@ from typing import Optional, Tuple
 
 import torch
 import torch.nn as nn
-from transformers.modeling_utils import apply_chunking_to_forward
+
+try:
+    from transformers.modeling_utils import apply_chunking_to_forward
+except ImportError:
+    def apply_chunking_to_forward(forward_fn, chunk_size, chunk_dim, *input_tensors):
+        if chunk_size is None or chunk_size <= 0:
+            return forward_fn(*input_tensors)
+
+        if len(input_tensors) == 0:
+            raise ValueError("input_tensors must not be empty.")
+
+        seq_len = input_tensors[0].shape[chunk_dim]
+        for tensor in input_tensors:
+            if tensor.shape[chunk_dim] != seq_len:
+                raise ValueError("All input_tensors must have the same shape in the chunking dimension.")
+
+        if seq_len % chunk_size != 0:
+            return forward_fn(*input_tensors)
+
+        num_chunks = seq_len // chunk_size
+        input_chunks = [torch.chunk(tensor, num_chunks, dim=chunk_dim) for tensor in input_tensors]
+
+        output_chunks = [forward_fn(*chunk_inputs) for chunk_inputs in zip(*input_chunks)]
+
+        first_output = output_chunks[0]
+        if isinstance(first_output, tuple):
+            transposed = list(zip(*output_chunks))
+            concatenated = [torch.cat(t, dim=chunk_dim) for t in transposed]
+            return tuple(concatenated)
+
+        return torch.cat(output_chunks, dim=chunk_dim)
 
 
 def gelu(x):

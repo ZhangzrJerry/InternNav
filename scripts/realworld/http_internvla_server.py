@@ -2,12 +2,15 @@ import argparse
 import json
 import os
 import time
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 from flask import Flask, jsonify, request
 from PIL import Image
 
+sys.path.append(str(Path(__file__).parent.parent.parent))
 from internnav.agent.internvla_n1_agent_realworld import InternVLAN1AsyncAgent
 
 app = Flask(__name__)
@@ -81,7 +84,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--device", type=str, default="cuda:0")
-    parser.add_argument("--model_path", type=str, default="checkpoints/InternVLA-N1")
+    parser.add_argument("--model_path", type=str, default="checkpoints/InternVLA-N1-DualVLN")
     parser.add_argument("--resize_w", type=int, default=384)
     parser.add_argument("--resize_h", type=int, default=384)
     parser.add_argument("--num_history", type=int, default=8)
@@ -92,10 +95,11 @@ if __name__ == '__main__':
     )
     agent = InternVLAN1AsyncAgent(args)
     agent.step(
-        np.zeros((480, 640, 3)),
-        np.zeros((480, 640)),
+        np.zeros((480, 640, 3), dtype=np.uint8),
+        np.zeros((480, 640), dtype=np.uint16),
         np.eye(4),
         "hello",
+        intrinsic=args.camera_intrinsic,
     )
     agent.reset()
 

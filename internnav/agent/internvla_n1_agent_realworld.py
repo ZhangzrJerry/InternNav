@@ -27,6 +27,7 @@ class InternVLAN1AsyncAgent:
     def __init__(self, args):
         self.device = torch.device(args.device)
         self.save_dir = "test_data/" + datetime.now().strftime("%Y%m%d_%H%M%S")
+        os.makedirs(self.save_dir, exist_ok=True)
         print(f"args.model_path{args.model_path}")
         self.model = InternVLAN1ForCausalLM.from_pretrained(
             args.model_path,
@@ -43,7 +44,7 @@ class InternVLAN1AsyncAgent:
         self.resize_w = args.resize_w
         self.resize_h = args.resize_h
         self.num_history = args.num_history
-        self.PLAN_STEP_GAP = args.plan_step_gap
+        self.PLAN_STEP_GAP = getattr(args, "plan_step_gap", 4)
 
         prompt = "You are an autonomous navigation assistant. Your task is to <instruction>. Where should you go next to stay on track? Please output the next waypoint's coordinates in the image. Please output STOP when you have successfully completed the task."
         answer = ""
