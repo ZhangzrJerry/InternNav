@@ -15,7 +15,7 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 from collections import OrderedDict
 
 from PIL import Image
-from transformers import AutoProcessor
+from transformers import AutoProcessor, BitsAndBytesConfig
 
 from internnav.model.basemodel.internvla_n1.internvla_n1 import InternVLAN1ForCausalLM
 from internnav.model.utils.vln_utils import S2Output, split_and_clean, traj_to_actions
@@ -29,15 +29,20 @@ class InternVLAN1AsyncAgent:
         self.save_dir = "test_data/" + datetime.now().strftime("%Y%m%d_%H%M%S")
         os.makedirs(self.save_dir, exist_ok=True)
         print(f"args.model_path{args.model_path}")
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_use_double_quant=True,
+            bnb_4bit_quant_type="nf4",
+            bnb_4bit_compute_dtype=torch.bfloat16,
+        )
         self.model = InternVLAN1ForCausalLM.from_pretrained(
             args.model_path,
             ignore_mismatched_sizes=True,
-            torch_dtype=torch.bfloat16,
             attn_implementation="eager",
+            quantization_config=quantization_config,
             device_map={"": self.device},
         )
         self.model.eval()
-        self.model.to(self.device)
 
         self.processor = AutoProcessor.from_pretrained(args.model_path)
         self.processor.tokenizer.padding_side = 'left'
